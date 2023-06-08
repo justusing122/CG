@@ -1,0 +1,128 @@
+#include <GL/glut.h>
+#include <iostream>
+using namespace std;
+
+int numVertices = 0;
+int maxVertices = 100;
+int windowWidth = 800;
+int windowHeight = 600;
+
+float red = 1.0, green = 1.0, blue = 1.0;
+
+struct Point {
+    int x, y;
+};
+
+Point vertices[100];
+
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
+}
+
+void setColor(float r, float g, float b) {
+    glColor3f(r, g, b);
+}
+
+void setColorFromPanel(int x, int y) {
+    unsigned char pixel[4];
+    glReadPixels(x, windowHeight - y, 1, 1, GL_RGB, GL_UNSIGNED_BYTE, pixel);
+
+    red = pixel[0] / 255.0;
+    green = pixel[1] / 255.0;
+    blue = pixel[2] / 255.0;
+}
+
+void drawPolygon() {
+    setColor(red, green, blue);
+
+    glBegin(GL_LINE_LOOP);
+    for (int i = 0; i < numVertices; i++) {
+        glVertex2i(vertices[i].x, vertices[i].y);
+    }
+    glEnd();
+    glFlush();
+}
+
+void display() {
+    glClearColor(0.0, 0.0, 0.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    drawPolygon();
+
+    glutSwapBuffers();
+}
+
+void reshape(int w, int h) {
+    windowWidth = w;
+    windowHeight = h;
+
+    glViewport(0, 0, windowWidth, windowHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, windowWidth, 0, windowHeight);
+    glMatrixMode(GL_MODELVIEW);
+
+    glutPostRedisplay();
+}
+
+void mouseClick(int button, int state, int x, int y) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+        if (numVertices < maxVertices) {
+            vertices[numVertices].x = x;
+            vertices[numVertices].y = windowHeight - y;
+            numVertices++;
+
+            glutPostRedisplay();
+        }
+    } else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
+        setColorFromPanel(x, y);
+    }
+}
+
+void colorPanelDisplay() {
+    int colorPanelWidth = 100;
+    int colorPanelHeight = 200;
+
+    glViewport(windowWidth - colorPanelWidth, 0, colorPanelWidth, colorPanelHeight);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, colorPanelWidth, 0, colorPanelHeight);
+    glMatrixMode(GL_MODELVIEW);
+
+    glClearColor(0.8, 0.8, 0.8, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+
+    glBegin(GL_QUADS);
+    setColor(1.0, 0.0, 0.0);
+    glVertex2i(0, 0);
+    glVertex2i(colorPanelWidth, 0);
+    setColor(0.0, 1.0, 0.0);
+    glVertex2i(colorPanelWidth, colorPanelHeight);
+    glVertex2i(0, colorPanelHeight);
+    glEnd();
+
+    glutSwapBuffers();
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_DOUBLE | GLUT_RGB);
+    glutInitWindowSize(windowWidth, windowHeight);
+    glutCreateWindow("Draw Polygon");
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMouseFunc(mouseClick);
+
+    int colorPanelWidth = 100;
+    int colorPanelHeight = 200;
+    glutInitWindowSize(windowWidth + colorPanelWidth, windowHeight);
+    glutInitWindowPosition(100, 100);
+    int windowID = glutCreateWindow("Color Panel");
+    glutDisplayFunc(colorPanelDisplay);
+
+    glutMainLoop();
+    return 0;
+}
