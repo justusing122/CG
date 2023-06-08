@@ -1,0 +1,65 @@
+#include <GL/glut.h>
+
+void drawPixel(int x, int y) {
+    glBegin(GL_POINTS);
+    glVertex2i(x, y);
+    glEnd();
+    glFlush();
+}
+
+void boundaryFill(int x, int y, float fillColor[3], float borderColor[3]) {
+    float interiorColor[3];
+    glReadPixels(x, y, 1, 1, GL_RGB, GL_FLOAT, interiorColor);
+    
+    if (
+        (interiorColor[0] != borderColor[0] || interiorColor[1] != borderColor[1] || interiorColor[2] != borderColor[2]) &&
+        (interiorColor[0] != fillColor[0] || interiorColor[1] != fillColor[1] || interiorColor[2] != fillColor[2])
+    ) {
+        drawPixel(x, y);
+        glColor3f(fillColor[0], fillColor[1], fillColor[2]);
+        
+        boundaryFill(x + 1, y, fillColor, borderColor);
+        boundaryFill(x - 1, y, fillColor, borderColor);
+        boundaryFill(x, y + 1, fillColor, borderColor);
+        boundaryFill(x, y - 1, fillColor, borderColor);
+    }
+}
+
+void display() {
+    glClearColor(1.0, 1.0, 1.0, 1.0);
+    glClear(GL_COLOR_BUFFER_BIT);
+    
+    glColor3f(0.0, 0.0, 0.0);
+    glBegin(GL_LINE_LOOP);
+    glVertex2i(100, 100);
+    glVertex2i(100, 200);
+    glVertex2i(200, 200);
+    glVertex2i(200, 100);
+    glEnd();
+    
+    float fillColor[] = {0.0, 1.0, 0.0}; // Fill color (Green)
+    float borderColor[] = {0.0, 0.0, 0.0}; // Border color (Black)
+    
+    boundaryFill(150, 150, fillColor, borderColor); // Start filling from a point inside the shape
+    
+    glFlush();
+}
+
+void reshape(int w, int h) {
+    glViewport(0, 0, w, h);
+    glMatrixMode(GL_PROJECTION);
+    glLoadIdentity();
+    gluOrtho2D(0, w, 0, h);
+    glMatrixMode(GL_MODELVIEW);
+}
+
+int main(int argc, char** argv) {
+    glutInit(&argc, argv);
+    glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+    glutInitWindowSize(400, 400);
+    glutCreateWindow("Non-Recursive Boundary Fill Algorithm");
+    glutDisplayFunc(display);
+    glutReshapeFunc(reshape);
+    glutMainLoop();
+    return 0;
+}
